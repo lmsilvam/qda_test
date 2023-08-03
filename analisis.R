@@ -30,13 +30,15 @@ petro <- paste(temp_df[temp_df$nombre=="petro",2], collapse=" ")
 duque <- paste(temp_df[temp_df$nombre=="duque",2], collapse=" ")
 
 # Stopwords en español
-custom_stop_words <- bind_rows(stop_words,
-                               data_frame(word = quanteda::data_char_stopwords$spanish,
-                                          lexicon = "custom"))
+custom_stop_words <- readLines("stopwords-es.txt", warn=F)
 
 # Convertir en tokens todo
-df_petro <- tibble(contenido=petro) %>% unnest_tokens(output=palabra, input=contenido)
-df_duque <- tibble(contenido=duque) %>% unnest_tokens(output=palabra, input=contenido)
+df_petro <- tibble(contenido=petro) %>% 
+  unnest_tokens(output=palabra, input=contenido) %>% 
+  anti_join(custom_stop_words)
+df_duque <- tibble(contenido=duque) %>% 
+  unnest_tokens(output=palabra, input=contenido) %>% 
+  anti_join(custom_stop_words)
 
 # Conteo de palabras
 df_petro %>%
