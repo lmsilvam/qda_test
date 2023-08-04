@@ -1,51 +1,42 @@
 # Importar paquetes
-if (!require(tidytext)) {
-  install.packages(tidytext)
-  library(tidytext)
+paquetes <- c("tidytext", "tidyverse", "patchwork", "wordcloud", "stopwords")
+
+paquetes_instalados <- paquetes %in% rownames(installed.packages())
+if (any(paquetes_instalados == FALSE)) {
+  install.packages(paquetes[!paquetes_instalados])
 }
-if (!require(tidyverse)) {
-  install.packages(tidyverse)
-  library(tidyverse)
-}
-if (!require(patchwork)) {
-  install.packages('patchwork')
-  library(patchwork)
-}
-if (!require(wordcloud)) {
-  install.packages('wordcloud')
-  library(wordcloud)
-}
+
+invisible(lapply(paquetes, library, character.only = TRUE))
 
 # Leer archivos
-temp_df <- data.frame(matrix(nrow=1, ncol=2))
-colnames(temp_df) <- c("nombre", "contenido")
 archivos <- list.files(path='discursos', pattern="\\.txt$", full.names = T)
-cuantos <- length(archivos)
-for (i in 1:cuantos) {
-  contenido_arch <- read_file(archivos[i])
-  nombre_arch <- substr(archivos[i], 11, 15)
-  temp_df <- rbind(temp_df, c(nombre_arch, contenido_arch))
-}
-temp_df <- temp_df[-1, ]
+contenido <- lapply(archivos, read_file)
+autor <- lapply(archivos, function(x) str_extract(x, "/[a-z]*"))
+datos <- data.frame(cbind(autor, contenido))
+
+# Stopwords custom 
+custom_stopwords <- data.frame(palabra= readLines('stopwords-es.txt', warn=F))
 
 # Discursos de ambos, juntos
-petro <- paste(temp_df[temp_df$nombre=="petro",2], collapse=" ")
-duque <- paste(temp_df[temp_df$nombre=="duque",2], collapse=" ")
-
-# Stopwords en español
-custom_stop_words <- data.frame(palabra=readLines("stopwords-es.txt", warn=F), lexicon="SMART")
-
-# Convertir en tokens todo
-df_petro <- tibble(contenido=petro) %>% 
-  unnest_tokens(output=palabra, input=contenido) %>% 
-  anti_join(custom_stop_words)
-df_duque <- tibble(contenido=duque) %>% 
-  unnest_tokens(output=palabra, input=contenido) %>% 
-  anti_join(custom_stop_words)
+discursos <- datos %>% 
+  group_by(autor) %>% 
+  summarise(cont= paste(contenido, collapse='')) %>% 
+  unnest_tokens(output=palabra, input=cont) %>% 
+  select(autor, palabra) %>% 
+  anti_join(custom_stopwords)
 
 # Conteo de palabras
-ppal_petro <- df_petro %>% count(palabra) %>% filter(n>10) %>% arrange(desc(n)) 
-ppal_duque <- df_duque %>% count(palabra) %>% filter(n>10) %>% arrange(desc(n)) 
+ppal_petro <- discursos %>% 
+  filter(autor=="/petro") %>% 
+  count(palabra) %>% 
+  filter(n > 10) %>% 
+  arrange(desc(n)) 
+
+ppal_duque <- discursos %>% 
+  filter(autor=="/duque") %>% 
+  count(palabra) %>% 
+  filter(n > 10) %>% 
+  arrange(desc(n)) 
 
 p1 <- ppal_petro %>%
   head(20) %>% 

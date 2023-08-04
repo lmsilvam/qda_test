@@ -10,6 +10,7 @@
 9
 _
 a
+acá
 actualmente
 acuerdo
 adelante
@@ -35,6 +36,7 @@ ambos
 ampleamos
 antano
 antaño
+años
 ante
 anterior
 antes
@@ -362,6 +364,9 @@ intentas
 intento
 ir
 j
+juan
+juana
+juliana
 junto
 k
 l
